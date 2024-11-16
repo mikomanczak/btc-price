@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/inter-ui@3.19.3/inter.css" rel="stylesheet">
+    <title>Bitcoin Price</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #212121;
+            display: flex;
+            height: 100vh;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+        }
+        /* Removed nested h1 selector */
+        h1 {
+            color: #fff;
+        }
+        .container {
+            background-color: #212121;
+            padding: 30px 50px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .currency-code {
+            font-size: 0.6em;
+            vertical-align: baseline;
+            margin-left: 4px;
+            color: #ff9900; /* Optional: Match the price color */
+        }
+        .last-updated {
+            color: #555454;
+            font-size: 0.9em;
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            text-align: center;
+        }
+        .error {
+            color: red;
+            margin-top: 20px;
+        }
+        .price {
+            font-size: 3em;
+            color: #ff9900;
+            margin: 20px 0;
+            opacity: 1; /* Ensure initial opacity */
+            transition: opacity 2.5s ease-in-out; /* Changed to 0.5s to match JS */
+        }
+        .fade-out {
+            opacity: 0;
+        }
+        /* Removed fade-in class as it's redundant */
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="price" id="btc-price">loading...</div>
+        <div class="last-updated" id="last-updated"></div>
+        <div class="error" id="error-message"></div>
+    </div>
+
+    <script>
+        // The REST endpoint to fetch the current BTC price
+        const API_URL = 'https://api.coinbase.com/v2/exchange-rates?currency=BTC';
+
+        // Elements to display data
+        const priceElement = document.getElementById('btc-price');
+        const lastUpdatedElement = document.getElementById('last-updated');
+        const errorMessageElement = document.getElementById('error-message');
+
+        // Function to fetch and update the BTC price
+        async function updateBTCPrice() {
+            try {
+                const response = await fetch(API_URL);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+        
+                const data = await response.json();
+                const price = data.data.rates.USD;
+                const formattedPrice = new Intl.NumberFormat('de-DE', { style: 'decimal', minimumFractionDigits: 2 }).format(price);
+                const readablePrice = `${formattedPrice} <span class="currency-code">USD</span>`;
+                
+                // Apply fade-out
+                priceElement.classList.add('fade-out');
+
+                // Listen for the end of the fade-out transition
+                priceElement.addEventListener('transitionend', function handleFadeOut() {
+                    // Remove the event listener to prevent multiple triggers
+                    priceElement.removeEventListener('transitionend', handleFadeOut);
+                    
+                    // Update the price
+                    priceElement.innerHTML = readablePrice;
+                    
+                    // Fade back in
+                    priceElement.classList.remove('fade-out');
+                });
+                
+                const now = new Date();
+                lastUpdatedElement.textContent = `Last updated: ${now.toLocaleString()}`;
+                
+                errorMessageElement.textContent = '';
+            } catch (error) {
+                console.error('Error fetching BTC price:', error);
+                errorMessageElement.textContent = 'Failed to fetch BTC price. Please try again later.';
+                priceElement.textContent = 'N/A';
+                lastUpdatedElement.textContent = '';
+            }
+        }
+
+        // Initial fetch when the page loads
+        updateBTCPrice();
+
+        // Update the price every 20 seconds (20000 milliseconds)
+        setInterval(updateBTCPrice, 20000);
+    </script>
+
+</body>
+</html>
